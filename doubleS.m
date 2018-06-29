@@ -4,31 +4,31 @@ q0 = 0
 q1 = 10 
 vmax = 10
 max = 10
-v0 = 1
-v1 = 0
+v0 = 5
+v1 = 7.5
 amax = 10
 jmax = 30
 
 %根据轨迹规划的流程，首先根据初始调节与限制条件判断是否存在云加速段
 %首先按照能够达到最大速度vmax，来计算Ta,Tb,Tj1 Tj2, Tv
 if (vmax -v0)*jmax < amax^2
-    Tj1 = ((vmax - v0)/jmax)^0.5
-    Ta = 2*Tj1
+    Tj1 = ((vmax - v0)/jmax)^0.5;
+    Ta = 2*Tj1;
     alima = Tj1 * jmax;
 else
-    Tj1 = amax/jmax
-    Ta = Tj1 + (vmax-v0)/amax
-    alima = amax
+    Tj1 = amax/jmax;
+    Ta = Tj1 + (vmax-v0)/amax;
+    alima = amax;
 end
 
 if (vmax -v1)*jmax < amax^2
-    Tj2 = ((vmax - v1)/jmax)^0.5
-    Td = 2*Tj1
+    Tj2 = ((vmax - v1)/jmax)^0.5;
+    Td = 2*Tj1;
     alimd = Tj2* jmax;
 else
-    Tj2 = amax/jmax
-    Td = Tj2 + (vmax-v1)/amax
-    alimd = amax
+    Tj2 = amax/jmax;
+    Td = Tj2 + (vmax-v1)/amax;
+    alimd = amax;
 end
     
 Tv = (q1 - q0)/vmax - Ta/2*(1+v0/vmax) - Td/2*(1+v1/vmax)
@@ -47,30 +47,72 @@ else
     %首先重新计算Ta,Tb
     amax_org = amax;
     delta = (amax^4)/(jmax^2) + 2*(v0^2+v1^2) + amax*(4*(q1 - q0) - 2*amax/jmax*(v0+v1));
-    Tj1 = amax/jmax;
-    Ta = (amax^2/jmax - 2*v0 + delta^0.5)/2/amax;
-    Tj2 = amax/jmax;
-    Td = (amax^2/jmax - 2*v1 + delta^0.5)/2/amax;
-    while Ta < 2*Tj1
+    Tj1 = amax/jmax
+    Ta = (amax^2/jmax - 2*v0 + delta^0.5)/2/amax
+    Tj2 = amax/jmax
+    Td = (amax^2/jmax - 2*v1 + delta^0.5)/2/amax
+    vlim = v0 + (Ta - Tj1)*alima
+    while Ta < 2*Tj1||Td < 2*Tj2
         amax = amax - amax_org*0.1;
         alima = amax;
+        alimd = amax;
+        if amax>0
+            delta = (amax^4)/(jmax^2) + 2*(v0^2+v1^2) + amax*(4*(q1 - q0) - 2*amax/jmax*(v0+v1));
+        else
+            delta = (amax^4)/(jmax^2) + 2*(v0^2+v1^2) - amax*(4*(q1 - q0) - 2*amax/jmax*(v0+v1));
+        end
         Tj1 = amax/jmax;
-        Ta = (amax^2/jmax - 2*v0 + delta^0.5)/2/amax;     
-    end
-    
-    if Ta <0
-        Ta =0;
-    end
-    amax = amax_org;
-    while Td < 2*Tj2
-        amax = amax - amax_org*0.1;
-        alimb = amax;
+        Ta = (amax^2/jmax - 2*v0 + delta^0.5)/2/amax;
         Tj2 = amax/jmax;
-        Td = (amax^2/jmax - 2*v1 + delta^0.5)/2/amax;     
+        Td = (amax^2/jmax - 2*v1 + delta^0.5)/2/amax;
+        vlim = v0 + (Ta - Tj1)*alima;
+        vlima = vlim;
+        vlimb = v1 - (Td - Tj2)*alimd;
     end
-    if Td <0
-        Td =0;
+    disp('这里打印出计算出来的Ta,Tb,')
+    Tj1
+    Ta
+    Td
+    amax
+    if Ta <0||Td<0
+        if v0>v1
+            %这里只需要一个减速段
+            Ta =0;
+            Tj1 = 0;
+            alima = 0;
+            Td = 2*(q1 - q0)/(v1 + v0);
+            Tj2 = (jmax*(q1 - q0) - (jmax*(jmax*(q1 - q0)^2 + (v1 + v0)^2*(v1 - v0)))^0.5)/jmax/(v1 + v0);
+            alimd = -jmax*Tj2
+            vlim = v1 - (Td - Tj2)*alimd
+            alimd = -alimd
+        else
+            Td =0;
+            Tj2 = 0;
+        
+            Ta = 2*(q1 - q0)/(v1 + v0);
+            Tj1 = (jmax*(q1 - q0) - (jmax*(jmax*(q1 - q0)^2 - (v1 + v0)^2*(v1 - v0)))^0.5)/jmax/(v1 + v0);
+            alima = jmax*Tj1;
+            vlim = v0 + (Ta - Tj1)*alima
+        end
     end
+
+%     amax = amax_org;
+%     while Td < 2*Tj2
+%         amax = amax - amax_org*0.1;
+%         alimb = amax;
+%         Tj2 = amax/jmax;
+%         Td = (amax^2/jmax - 2*v1 + delta^0.5)/2/amax;     
+%     end
+    
+%     if Td <0
+%         Td =0;
+%         Tj2 = 0;
+%         
+%         Ta = 2*(q1 - q0)/(v1 + v0);
+%         Tj1 = (jmax*(q1 - q0) - (jmax*(jmax*(q1 - q0)^2 - (v1 + v0)^2*(v1 - v0)^0.5)))/jmax/(v1 + v0);
+%         alima = jmax*Tj1;
+%         vlim = v0 + (Ta - Tj1)*alima
+%     end
     Tj1
     Tj2
     Ta
@@ -79,7 +121,7 @@ else
     alimd
     T = Tv + Ta + Td
 %     vlim = v0 + alima * Tj1^2 + (Ta - 2*Tj1)*alima
-    vlim = v0 + (Ta - Tj1)*alima 
+     
 end
 for t = 0:0.001:T
 %         加速段轨迹
