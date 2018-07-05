@@ -1,20 +1,26 @@
 %通过直接确定轨迹参数的方法，计算并且画出双S曲线。
 %定义变量 , 现在的初始值都按找书中的例子给定
-q0 = 0  
-q1 = 10 
-vmax = 10
+q0 = 5  
+q1 = 8 
+vmax = 0
 max = 10
-v0 = 5
-v1 = 7.5
-amax = 10
+v0 = 6
+v1 = 0
+amax = 20
 jmax = 30
 
 %根据轨迹规划的流程，首先根据初始调节与限制条件判断是否存在云加速段
 %首先按照能够达到最大速度vmax，来计算Ta,Tb,Tj1 Tj2, Tv
 if (vmax -v0)*jmax < amax^2
-    Tj1 = ((vmax - v0)/jmax)^0.5;
-    Ta = 2*Tj1;
-    alima = Tj1 * jmax;
+    if v0>vmax
+        Tj1 = 0; 
+        Ta = 0;
+        alima = 0;
+    else
+        Tj1 = ((vmax - v0)/jmax)^0.5;
+        Ta = 2*Tj1;
+        alima = Tj1 * jmax;
+    end
 else
     Tj1 = amax/jmax;
     Ta = Tj1 + (vmax-v0)/amax;
@@ -186,11 +192,11 @@ for t = 0:0.001:T
          end
 end
 t =  0:0.001:T;
-plot(t,p)
+plot(p)
 figure
-plot(t,vc)
+plot(vc)
 figure
-plot(t,ac)
+plot(ac)
 figure
-plot(t,jc)
+plot(jc)
 
